@@ -7,6 +7,7 @@ import StudentDiscoveryDashboard from '@/pages/StudentDiscoveryDashboard';
 import StudentProjectDetail from '@/pages/StudentProjectDetail';
 import ApplicationStatusTracker from '@/pages/ApplicationStatusTracker';
 import ComingSoon from '@/pages/ComingSoon';
+import ProfilePage from '@/pages/ProfilePage';
 import { Toaster } from 'react-hot-toast';
 
 export default function App() {
@@ -25,6 +26,7 @@ export default function App() {
           <Route path="/messages" element={<ComingSoon />} />
           <Route path="/history" element={<ComingSoon />} />
           <Route path="/settings" element={<ComingSoon />} />
+          <Route path="/profile" element={<ProfilePage />} />
         </Route>
       </Routes>
     </BrowserRouter>
