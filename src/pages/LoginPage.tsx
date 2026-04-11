@@ -1,12 +1,43 @@
-import { Link } from 'react-router-dom';
-import { Mail } from 'lucide-react';
+import { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { Mail, User } from 'lucide-react';
 import AuthLayout from '@/layouts/AuthLayout';
 import { Input } from '@/components/ui/Input';
 import { PasswordInput } from '@/components/ui/PasswordInput';
 import { Button } from '@/components/ui/Button';
 import loginImage from '@/assets/login.jpg';
+import { authApi } from '@/api/auth';
+import toast from 'react-hot-toast';
 
 export default function LoginPage() {
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+
+    try {
+      const data = await authApi.login({ username, password });
+      if (data.accessToken) {
+        localStorage.setItem('accessToken', data.accessToken);
+        localStorage.setItem('role', data.role);
+        toast.success('Successfully logged in!');
+        navigate('/home');
+      }
+    } catch (err: any) {
+      const errorMessage = err.response?.data?.message || 'Failed to login. Please check your credentials.';
+      setError(errorMessage);
+      toast.error(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <AuthLayout
       title="Welcome Back"
@@ -17,20 +48,25 @@ export default function LoginPage() {
         imageUrl: loginImage
       }}
     >
-      <form className="space-y-6 mt-8 text-left">
+      <form className="space-y-6 mt-8 text-left" onSubmit={handleSubmit}>
+        {error && <p className="text-sm font-medium text-maul mb-4">{error}</p>}
         <Input
-          id="email"
-          type="email"
-          label="Email Address"
-          placeholder="you@example.com"
-          autoComplete="email"
-          icon={<Mail className="h-5 w-5 text-gray-400" />}
+          id="username"
+          type="text"
+          label="Username"
+          placeholder="your_username"
+          autoComplete="username"
+          icon={<User className="h-5 w-5 text-gray-400" />}
+          value={username}
+          onChange={(e) => setUsername(e.target.value)}
           required
         />
 
         <PasswordInput
           id="password"
           placeholder="••••••••"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
           required
         />
 
@@ -54,8 +90,8 @@ export default function LoginPage() {
           </div>
         </div>
 
-        <Button type="submit" variant="primary" fullWidth>
-          Sign in
+        <Button type="submit" variant="primary" fullWidth disabled={loading}>
+          {loading ? 'Signing in...' : 'Sign in'}
         </Button>
       </form>
 
