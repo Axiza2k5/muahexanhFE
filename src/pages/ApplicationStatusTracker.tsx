@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 type AppStatus = 'IN_PROGRESS' | 'APPROVED' | 'NOT_SELECTED';
