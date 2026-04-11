@@ -27,7 +27,7 @@ export default function LoginPage() {
         localStorage.setItem('accessToken', data.accessToken);
         localStorage.setItem('role', data.role);
         toast.success('Successfully logged in!');
-        navigate('/home');
+        navigate('/projects');
       }
     } catch (err: any) {
       const errorMessage = err.response?.data?.message || 'Failed to login. Please check your credentials.';
