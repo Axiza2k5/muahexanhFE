@@ -2,6 +2,7 @@ import { useMemo, useState, useEffect } from 'react';
 import type { ChangeEvent, FormEvent } from 'react';
 import type { Profile, UserRole } from '@/types';
 import axiosInstance from '@/api/axiosInstance';
+import toast from 'react-hot-toast';
 
 type ProfileErrors = Partial<Record<'full_name' | 'email' | 'abilities_description', string>>;
 
@@ -262,20 +263,34 @@ export default function ProfilePage() {
     }));
   };
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
     if (!validate()) {
       return;
     }
 
-    setProfile(draftProfile);
-    localStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify(draftProfile));
-    setSaveMessage('Profile updated successfully.');
-    setIsEditing(false);
+    try {
+      const payload = {
+        fullName: draftProfile.full_name,
+        email: draftProfile.email,
+        phoneNumber: draftProfile.phone_number,
+        address: draftProfile.address,
+        abilitiesDescription: draftProfile.abilities_description,
+        organizationName: draftProfile.organization_name,
+      };
 
-    // TODO: Add API call to update profile on backend
-    // await axiosInstance.put('/v1/users/me/profile', draftProfile);
+      await axiosInstance.put('/v1/users/me/profile', payload);
+
+      setProfile(draftProfile);
+      localStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify(draftProfile));
+      setSaveMessage('Profile updated successfully.');
+      setIsEditing(false);
+      toast.success('Hồ sơ đã được cập nhật thành công!');
+    } catch (error: any) {
+      console.error('Failed to update profile:', error);
+      toast.error(error.response?.data?.message || 'Cập nhật hồ sơ thất bại. Vui lòng thử lại.');
+    }
   };
 
   const profileData = isEditing ? draftProfile : profile;

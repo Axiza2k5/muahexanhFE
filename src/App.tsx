@@ -25,7 +25,6 @@ export default function App() {
           <Route path="/applications" element={<ApplicationStatusTracker />} />
           <Route path="/messages" element={<ComingSoon />} />
           <Route path="/history" element={<ComingSoon />} />
-          <Route path="/settings" element={<ComingSoon />} />
           <Route path="/profile" element={<ProfilePage />} />
         </Route>
       </Routes>
