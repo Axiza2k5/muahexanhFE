@@ -143,6 +143,7 @@ export default function ProfilePage() {
   const [saveMessage, setSaveMessage] = useState('');
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const isStudent = role === 'student';
 
@@ -262,20 +263,61 @@ export default function ProfilePage() {
     }));
   };
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
     if (!validate()) {
       return;
     }
 
-    setProfile(draftProfile);
-    localStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify(draftProfile));
-    setSaveMessage('Profile updated successfully.');
-    setIsEditing(false);
+    setIsSubmitting(true);
+    setSaveMessage('');
 
-    // TODO: Add API call to update profile on backend
-    // await axiosInstance.put('/v1/users/me/profile', draftProfile);
+    try {
+      // Map profile data from snake_case to camelCase for API
+      const updatePayload = {
+        fullName: draftProfile.full_name,
+        email: draftProfile.email,
+        phoneNumber: draftProfile.phone_number,
+        address: draftProfile.address,
+        abilitiesDescription: draftProfile.abilities_description,
+        organizationName: draftProfile.organization_name,
+      };
+
+      console.log('Sending profile update:', updatePayload);
+
+      // Call API to update profile
+      const response = await axiosInstance.put('/v1/users/me/profile', updatePayload);
+      const updatedApiProfile = response.data;
+
+      // Map API response back to local Profile format
+      const mappedProfile: Profile = {
+        user_id: updatedApiProfile.userId,
+        full_name: updatedApiProfile.fullName || '',
+        email: updatedApiProfile.email || '',
+        phone_number: updatedApiProfile.phoneNumber || '',
+        address: updatedApiProfile.address || '',
+        abilities_description: updatedApiProfile.abilitiesDescription || '',
+        organization_name: updatedApiProfile.organizationName || '',
+      };
+
+      setProfile(mappedProfile);
+      setDraftProfile(mappedProfile);
+      localStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify(mappedProfile));
+      setSaveMessage('Profile updated successfully.');
+      setIsEditing(false);
+
+      // Auto clear success message after 3 seconds
+      setTimeout(() => {
+        setSaveMessage('');
+      }, 3000);
+    } catch (error: any) {
+      console.error('Failed to update profile:', error);
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to update profile. Please try again.';
+      setSaveMessage(`Error: ${errorMessage}`);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const profileData = isEditing ? draftProfile : profile;
@@ -422,7 +464,11 @@ export default function ProfilePage() {
                 />
               </div>
 
-              {saveMessage ? <p className="text-sm font-medium text-emerald-700">{saveMessage}</p> : null}
+              {saveMessage ? (
+                <p className={`text-sm font-medium ${saveMessage.startsWith('Error:') ? 'text-red-600' : 'text-emerald-700'}`}>
+                  {saveMessage}
+                </p>
+              ) : null}
             </div>
           </section>
 
@@ -495,9 +541,10 @@ export default function ProfilePage() {
             </button>
             <button
               type="submit"
-              className="inline-flex items-center justify-center rounded-xl bg-[#564AF7] px-7 py-3 text-sm font-bold text-white shadow-[0_22px_45px_-18px_rgba(86,74,247,0.5)] transition hover:bg-[#4b40dd]"
+              disabled={isSubmitting}
+              className="inline-flex items-center justify-center rounded-xl bg-[#564AF7] px-7 py-3 text-sm font-bold text-white shadow-[0_22px_45px_-18px_rgba(86,74,247,0.5)] transition hover:bg-[#4b40dd] disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Save Changes
+              {isSubmitting ? 'Saving...' : 'Save Changes'}
             </button>
           </div>
         ) : null}
