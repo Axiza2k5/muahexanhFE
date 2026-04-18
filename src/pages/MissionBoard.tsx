@@ -48,14 +48,26 @@ function MissionCard({ mission }: { mission: ProjectApiRes }) {
   const tags = parseSkills(mission.requiredSkills);
   const statusFormatted = mission.status.charAt(0) + mission.status.slice(1).toLowerCase();
 
+  const getStatusStyles = (status: string) => {
+    switch (status) {
+      case 'APPROVED':
+      case 'IN_PROGRESS':
+        return 'bg-[#0fb328]/10 text-[#0fb328]';
+      case 'COMPLETED':
+        return 'bg-blue-500/10 text-blue-600';
+      case 'REJECTED':
+        return 'bg-red-500/10 text-red-600';
+      default:
+        return 'bg-amber-500/10 text-amber-600';
+    }
+  };
+
   return (
     <article className="relative overflow-hidden rounded-[1.5rem] border border-slate-100 bg-white shadow-[0_16px_40px_-32px_rgba(15,23,42,0.5)] transition duration-200 hover:-translate-y-0.5 hover:shadow-[0_20px_48px_-28px_rgba(15,23,42,0.55)]">
       <div className="relative p-6 pb-5">
         <div className="relative overflow-hidden rounded-2xl">
           <img src={`https://picsum.photos/seed/${mission.id}/800/520`} alt={mission.title} className="h-44 w-full object-cover" />
-          <span className={`absolute left-4 top-4 rounded-lg px-3 py-1 text-xs font-bold backdrop-blur-md ${
-            mission.status === 'APPROVED' ? 'bg-[#0fb328]/10 text-[#0fb328]' : 'bg-amber-500/10 text-amber-600'
-          }`}>
+          <span className={`absolute left-4 top-4 rounded-lg px-3 py-1 text-xs font-bold backdrop-blur-md ${getStatusStyles(mission.status)}`}>
             {statusFormatted}
           </span>
         </div>

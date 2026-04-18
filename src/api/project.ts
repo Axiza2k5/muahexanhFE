@@ -20,7 +20,7 @@ export interface ProjectApplicationRes {
   projectTitle: string;
   studentId: number;
   studentName: string;
-  status: string;
+  status: 'APPLIED' | 'ACCEPTED' | 'REJECTED';
   appliedAt: string;
 }
 
@@ -74,12 +74,4 @@ export const projectApi = {
   }
 };
 
-export interface ProjectApplicationRes {
-  id: number;
-  projectId: number;
-  projectTitle: string;
-  studentId: number;
-  studentName: string;
-  status: 'APPLIED' | 'ACCEPTED' | 'REJECTED';
-  appliedAt: string;
-}
+
