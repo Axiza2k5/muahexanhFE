@@ -9,6 +9,7 @@ import StudentProjectDetail from '@/pages/StudentProjectDetail';
 import ApplicationStatusTracker from '@/pages/ApplicationStatusTracker';
 import VolunteerApplication from '@/pages/VolunteerApplication';
 import ComingSoon from '@/pages/ComingSoon';
+import AdminDashboard from '@/pages/AdminDashboard';
 import CreateProjectPage from '@/pages/CreateProject';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
 import ProfilePage from '@/pages/ProfilePage';
@@ -45,7 +46,7 @@ export default function App() {
 
           {/* Uni Admin Placeholder Routes */}
           <Route element={<ProtectedRoute allowedRoles={['UNI_ADMIN']} />}>
-            <Route path="/admin/dashboard" element={<ComingSoon />} />
+            <Route path="/admin/dashboard" element={<AdminDashboard />} />
             <Route path="/admin/register-leader" element={<CreateLeaderAccountPage />} />
           </Route>
 
