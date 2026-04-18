@@ -27,7 +27,14 @@ export default function LoginPage() {
         localStorage.setItem('accessToken', data.accessToken);
         localStorage.setItem('role', data.role);
         toast.success('Successfully logged in!');
-        navigate('/projects');
+        
+        if (data.role === 'UNI_ADMIN') {
+          navigate('/admin/dashboard');
+        } else if (data.role === 'COMMUNITY_LEADER') {
+          navigate('/leader/dashboard');
+        } else {
+          navigate('/projects');
+        }
       }
     } catch (err: any) {
       const errorMessage = err.response?.data?.message || 'Failed to login. Please check your credentials.';

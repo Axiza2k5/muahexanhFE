@@ -55,8 +55,8 @@ const NAV_ITEMS: NavItem[] = [
   },
   // Shared Items
   {
-    label: 'Settings',
-    to: '/settings',
+    label: 'Profile',
+    to: '/profile',
     allowedRoles: ['STUDENT', 'COMMUNITY_LEADER', 'UNI_ADMIN'],
     icon: (
       <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -107,7 +107,7 @@ export default function Sidebar() {
             {item.label}
           </NavLink>
         ))}
-        
+
         {/* Logout Button */}
         <button
           onClick={handleLogout}

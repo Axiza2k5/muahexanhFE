@@ -15,8 +15,13 @@ export default function ProtectedRoute({ allowedRoles }: ProtectedRouteProps) {
   }
 
   if (allowedRoles && (!userRole || !allowedRoles.includes(userRole))) {
-    // Role not authorized
-    return <Navigate to="/projects" replace />;
+    // Role not authorized, redirect to their respective home page
+    if (userRole === 'UNI_ADMIN') return <Navigate to="/admin/dashboard" replace />;
+    if (userRole === 'COMMUNITY_LEADER') return <Navigate to="/leader/dashboard" replace />;
+    if (userRole === 'STUDENT') return <Navigate to="/projects" replace />;
+    
+    // Fallback if role is unknown
+    return <Navigate to="/login" replace />;
   }
 
   return <Outlet />;
