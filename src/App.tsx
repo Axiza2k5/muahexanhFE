@@ -3,11 +3,15 @@ import MainLayout from '@/layouts/MainLayout';
 import HomePage from '@/pages/HomePage';
 import LoginPage from '@/pages/LoginPage';
 import RegisterPage from '@/pages/RegisterPage';
+import CreateLeaderAccountPage from '@/pages/CreateLeaderAccountPage';
 import StudentDiscoveryDashboard from '@/pages/StudentDiscoveryDashboard';
 import StudentProjectDetail from '@/pages/StudentProjectDetail';
 import ApplicationStatusTracker from '@/pages/ApplicationStatusTracker';
+import VolunteerApplication from '@/pages/VolunteerApplication';
 import ComingSoon from '@/pages/ComingSoon';
+import ProtectedRoute from '@/components/auth/ProtectedRoute';
 import ProfilePage from '@/pages/ProfilePage';
+import MissionBoard from '@/pages/MissionBoard';
 import { Toaster } from 'react-hot-toast';
 
 export default function App() {
@@ -18,14 +22,36 @@ export default function App() {
         <Route path="/" element={<Navigate to="/login" replace />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
+
         <Route element={<MainLayout />}>
-          <Route path="/home" element={<HomePage />} />
-          <Route path="/projects" element={<StudentDiscoveryDashboard />} />
-          <Route path="/projects/:id" element={<StudentProjectDetail />} />
-          <Route path="/applications" element={<ApplicationStatusTracker />} />
-          <Route path="/messages" element={<ComingSoon />} />
-          <Route path="/history" element={<ComingSoon />} />
-          <Route path="/profile" element={<ProfilePage />} />
+          {/* Student Protected Routes */}
+          <Route element={<ProtectedRoute allowedRoles={['STUDENT']} />}>
+            <Route path="/projects" element={<StudentDiscoveryDashboard />} />
+            <Route path="/missions" element={<MissionBoard />} />
+            <Route path="/projects/:id" element={<StudentProjectDetail />} />
+            <Route path="/applications" element={<ApplicationStatusTracker />} />
+            <Route path="/applications/status" element={<ApplicationStatusTracker />} />
+
+          </Route>
+
+          {/* Community Leader Placeholder Routes */}
+          <Route element={<ProtectedRoute allowedRoles={['COMMUNITY_LEADER']} />}>
+            <Route path="/leader/dashboard" element={<MissionBoard />} />
+            <Route path="/leader/projects/:projectId/volunteers/:type" element={<VolunteerApplication />} />
+            <Route path="/leader/applications" element={<VolunteerApplication />} />
+          </Route>
+
+          {/* Uni Admin Placeholder Routes */}
+          <Route element={<ProtectedRoute allowedRoles={['UNI_ADMIN']} />}>
+            <Route path="/admin/dashboard" element={<ComingSoon />} />
+            <Route path="/admin/register-leader" element={<CreateLeaderAccountPage />} />
+          </Route>
+
+          {/* Shared Routes */}
+          <Route element={<ProtectedRoute />}>
+            <Route path="/home" element={<HomePage />} />
+            <Route path="/profile" element={<ProfilePage />} />
+          </Route>
         </Route>
       </Routes>
     </BrowserRouter>
