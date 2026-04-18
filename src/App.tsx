@@ -3,6 +3,7 @@ import MainLayout from '@/layouts/MainLayout';
 import HomePage from '@/pages/HomePage';
 import LoginPage from '@/pages/LoginPage';
 import RegisterPage from '@/pages/RegisterPage';
+import CreateLeaderAccountPage from '@/pages/CreateLeaderAccountPage';
 import StudentDiscoveryDashboard from '@/pages/StudentDiscoveryDashboard';
 import StudentProjectDetail from '@/pages/StudentProjectDetail';
 import ApplicationStatusTracker from '@/pages/ApplicationStatusTracker';
@@ -30,6 +31,7 @@ export default function App() {
             <Route path="/projects/:id" element={<StudentProjectDetail />} />
             <Route path="/applications" element={<VolunteerApplication />} />
             <Route path="/applications/status" element={<ApplicationStatusTracker />} />
+
           </Route>
 
           {/* Community Leader Placeholder Routes */}
@@ -41,6 +43,7 @@ export default function App() {
           {/* Uni Admin Placeholder Routes */}
           <Route element={<ProtectedRoute allowedRoles={['UNI_ADMIN']} />}>
             <Route path="/admin/dashboard" element={<ComingSoon />} />
+            <Route path="/admin/register-leader" element={<CreateLeaderAccountPage />} />
           </Route>
 
           {/* Shared Routes */}

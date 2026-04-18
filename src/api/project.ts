@@ -59,5 +59,27 @@ export const projectApi = {
   banStudent: async (projectId: string | number, studentId: number): Promise<ProjectApplicationRes> => {
     const response = await axiosInstance.patch(`/v1/projects/${projectId}/students/ban`, { studentId });
     return response.data;
+  },
+  applyToProject: async (projectId: number): Promise<ProjectApplicationRes> => {
+    const response = await axiosInstance.post('/v1/projects/applications', { projectId });
+    return response.data;
+  },
+  getMyApplications: async (): Promise<ProjectApplicationRes[]> => {
+    const response = await axiosInstance.get('/v1/projects/applications/my');
+    return response.data;
+  },
+  getApplicationStatus: async (projectId: string | number): Promise<ProjectApplicationRes> => {
+    const response = await axiosInstance.get(`/v1/projects/${projectId}/application-status`);
+    return response.data;
   }
 };
+
+export interface ProjectApplicationRes {
+  id: number;
+  projectId: number;
+  projectTitle: string;
+  studentId: number;
+  studentName: string;
+  status: 'APPLIED' | 'ACCEPTED' | 'REJECTED';
+  appliedAt: string;
+}
