@@ -8,6 +8,7 @@ import StudentDiscoveryDashboard from '@/pages/StudentDiscoveryDashboard';
 import StudentProjectDetail from '@/pages/StudentProjectDetail';
 import ApplicationStatusTracker from '@/pages/ApplicationStatusTracker';
 import ComingSoon from '@/pages/ComingSoon';
+import CreateProjectPage from '@/pages/CreateProject';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
 import ProfilePage from '@/pages/ProfilePage';
 import { Toaster } from 'react-hot-toast';
@@ -33,6 +34,7 @@ export default function App() {
           {/* Community Leader Placeholder Routes */}
           <Route element={<ProtectedRoute allowedRoles={['COMMUNITY_LEADER']} />}>
             <Route path="/leader/dashboard" element={<ComingSoon />} />
+            <Route path="/createproject" element={<CreateProjectPage />} />
           </Route>
 
           {/* Uni Admin Placeholder Routes */}
