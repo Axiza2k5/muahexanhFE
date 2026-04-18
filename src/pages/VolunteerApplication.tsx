@@ -1,8 +1,6 @@
 type Applicant = {
   id: number;
   name: string;
-  major: string;
-  year: string;
   skills: string[];
   avatar: string;
 };
@@ -11,40 +9,30 @@ const applicants: Applicant[] = [
   {
     id: 1,
     name: 'Minh Anh Nguyen',
-    major: 'Computer Science',
-    year: 'Year 3',
     skills: ['Web Dev', 'Leadership', 'Fluent EN'],
     avatar: 'https://placehold.co/80x80',
   },
   {
     id: 2,
     name: 'Hoang Viet Le',
-    major: 'Foreign Languages',
-    year: 'Year 2',
     skills: ['Translation', 'Tutoring', 'Logistics'],
     avatar: 'https://placehold.co/80x80',
   },
   {
     id: 3,
     name: 'Thu Thao Pham',
-    major: 'Sociology',
-    year: 'Year 4',
     skills: ['Community Org', 'First Aid'],
     avatar: 'https://placehold.co/80x80',
   },
   {
     id: 4,
     name: 'Quoc Bao Tran',
-    major: 'Physical Education',
-    year: 'Year 3',
     skills: ['Sports Coach', 'Youth Mentor'],
     avatar: 'https://placehold.co/80x80',
   },
   {
     id: 5,
     name: 'Gia Bao Dang',
-    major: 'Agriculture Science',
-    year: 'Year 4',
     skills: ['Farming Tech', 'Rural Dev', 'Horticulture'],
     avatar: 'https://placehold.co/80x80',
   },
@@ -62,9 +50,6 @@ function ApplicantCard({ applicant }: { applicant: Applicant }) {
 
       <div>
         <h3 className="m-0 text-lg font-bold text-[#151b2a]">{applicant.name}</h3>
-        <p className="mt-1 text-[0.92rem] text-slate-500">
-          {applicant.major}, {applicant.year}
-        </p>
       </div>
 
       <div className="flex flex-wrap gap-2">
