@@ -1,48 +1,12 @@
-type MissionCard = {
-  region: string;
-  title: string;
-  tags: string[];
-  status: 'Approved' | 'Pending';
-  image: string;
-};
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { projectApi, ProjectApiRes } from '@/api/project';
+import { userApi } from '@/api/user';
+import toast from 'react-hot-toast';
 
-const filterOptions = {
-  location: ['All Locations', 'Tra Vinh Province', 'Kon Tum Highlands', 'Ben Tre Delta', 'Quang Nam Heritage'],
-  skills: ['All Skills', 'Teaching', 'Construction', 'Medical', 'Arts', 'Engineering', 'Community'],
-};
+const SKILL_OPTIONS = ['All Skills', 'Teaching', 'Construction', 'Medical', 'Arts', 'Engineering', 'Community'];
 
-const missions: MissionCard[] = [
-  {
-    region: 'Tra Vinh Province',
-    title: 'Green Schools Initiative',
-    tags: ['Teaching', 'Community'],
-    status: 'Approved',
-    image: 'https://picsum.photos/seed/mission-1/800/520',
-  },
-  {
-    region: 'Kon Tum Highlands',
-    title: 'Infrastructure Support',
-    tags: ['Construction', 'Engineering'],
-    status: 'Approved',
-    image: 'https://picsum.photos/seed/mission-2/800/520',
-  },
-  {
-    region: 'Ben Tre Delta',
-    title: 'Medical Outreach 2024',
-    tags: ['Medical', 'Elderly Care'],
-    status: 'Approved',
-    image: 'https://picsum.photos/seed/mission-3/800/520',
-  },
-  {
-    region: 'Quang Nam Heritage',
-    title: 'Cultural Arts Program',
-    tags: ['Arts', 'History'],
-    status: 'Approved',
-    image: 'https://picsum.photos/seed/mission-4/800/520',
-  },
-];
-
-function SelectField({ label, value }: { label: string; value: string }) {
+function SelectField({ label, value, options, onChange }: { label: string; value: string; options: string[]; onChange: (val: string) => void }) {
   return (
     <label className="flex min-w-0 flex-1 flex-col gap-2">
       <span className="px-1 text-[0.65rem] font-semibold uppercase tracking-[0.18em] text-slate-400">
@@ -50,20 +14,15 @@ function SelectField({ label, value }: { label: string; value: string }) {
       </span>
       <div className="relative">
         <select
-          defaultValue={value}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
           className="h-14 w-full appearance-none rounded-2xl border border-slate-200 bg-white px-4 pr-12 text-[0.98rem] text-[#151b2a] shadow-[0_10px_30px_-28px_rgba(15,23,42,0.45)] outline-none transition focus:border-[#564af7] focus:ring-4 focus:ring-[#564af7]/10"
         >
-          {label === 'Location'
-            ? filterOptions.location.map((option) => (
-                <option key={option} value={option}>
-                  {option}
-                </option>
-              ))
-            : filterOptions.skills.map((option) => (
-                <option key={option} value={option}>
-                  {option}
-                </option>
-              ))}
+          {options.map((option) => (
+            <option key={option} value={option}>
+              {option}
+            </option>
+          ))}
         </select>
         <svg
           className="pointer-events-none absolute right-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400"
@@ -79,14 +38,25 @@ function SelectField({ label, value }: { label: string; value: string }) {
   );
 }
 
-function MissionCard({ mission }: { mission: MissionCard }) {
+function MissionCard({ mission }: { mission: ProjectApiRes }) {
+  const navigate = useNavigate();
+  const parseSkills = (skillsStr: string) => {
+    if (!skillsStr) return [];
+    return skillsStr.split(/[;,]/).map(s => s.trim()).filter(Boolean);
+  };
+
+  const tags = parseSkills(mission.requiredSkills);
+  const statusFormatted = mission.status.charAt(0) + mission.status.slice(1).toLowerCase();
+
   return (
     <article className="relative overflow-hidden rounded-[1.5rem] border border-slate-100 bg-white shadow-[0_16px_40px_-32px_rgba(15,23,42,0.5)] transition duration-200 hover:-translate-y-0.5 hover:shadow-[0_20px_48px_-28px_rgba(15,23,42,0.55)]">
       <div className="relative p-6 pb-5">
         <div className="relative overflow-hidden rounded-2xl">
-          <img src={mission.image} alt={mission.title} className="h-44 w-full object-cover" />
-          <span className="absolute left-4 top-4 rounded-lg bg-[#0fb328]/10 px-3 py-1 text-xs font-bold text-[#0fb328] backdrop-blur-md">
-            {mission.status}
+          <img src={`https://picsum.photos/seed/${mission.id}/800/520`} alt={mission.title} className="h-44 w-full object-cover" />
+          <span className={`absolute left-4 top-4 rounded-lg px-3 py-1 text-xs font-bold backdrop-blur-md ${
+            mission.status === 'APPROVED' ? 'bg-[#0fb328]/10 text-[#0fb328]' : 'bg-amber-500/10 text-amber-600'
+          }`}>
+            {statusFormatted}
           </span>
         </div>
       </div>
@@ -94,13 +64,13 @@ function MissionCard({ mission }: { mission: MissionCard }) {
       <div className="px-6 pb-6">
         <div className="mb-3 flex items-center gap-2 text-[0.72rem] font-bold uppercase tracking-[0.18em] text-slate-400">
           <span className="inline-flex h-2.5 w-2.5 rounded-full bg-slate-300" />
-          {mission.region}
+          Summer Campaign 2026
         </div>
 
-        <h3 className="text-[1.45rem] font-medium leading-tight text-[#151b2a]">{mission.title}</h3>
+        <h3 className="text-[1.45rem] font-medium leading-tight text-[#151b2a] line-clamp-2 h-14">{mission.title}</h3>
 
-        <div className="mt-4 flex flex-wrap gap-2">
-          {mission.tags.map((tag) => (
+        <div className="mt-4 flex flex-wrap gap-2 h-16 overflow-hidden">
+          {tags.map((tag) => (
             <span
               key={tag}
               className="rounded-full bg-[#f2f3ff] px-3.5 py-1.5 text-[0.65rem] font-bold uppercase tracking-[0.14em] text-[#564af7]"
@@ -113,15 +83,17 @@ function MissionCard({ mission }: { mission: MissionCard }) {
         <div className="mt-6 grid grid-cols-2 gap-3">
           <button
             type="button"
-            className="rounded-2xl border-2 border-[#564af7]/20 px-4 py-3 text-[0.98rem] font-medium text-[#564af7] transition hover:bg-[#f2f3ff]"
+            className="rounded-2xl border-2 border-amber-500/20 px-4 py-3 text-[0.98rem] font-bold text-amber-600 transition hover:bg-amber-50"
+            onClick={() => navigate(`/leader/projects/${mission.id}/volunteers/pending`)}
           >
-            Pending
+            View Pending
           </button>
           <button
             type="button"
-            className="rounded-2xl border-2 border-[#564af7]/20 px-4 py-3 text-[0.98rem] font-medium text-[#564af7] transition hover:bg-[#f2f3ff]"
+            className="rounded-2xl border-2 border-emerald-500/20 px-4 py-3 text-[0.98rem] font-bold text-emerald-600 transition hover:bg-emerald-50"
+            onClick={() => navigate(`/leader/projects/${mission.id}/volunteers/accepted`)}
           >
-            List
+            View Accepted
           </button>
         </div>
       </div>
@@ -130,37 +102,71 @@ function MissionCard({ mission }: { mission: MissionCard }) {
 }
 
 export default function MissionBoard() {
+  const [projects, setProjects] = useState<ProjectApiRes[]>([]);
+  const [skill, setSkill] = useState('All Skills');
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        const user = await userApi.getMyProfile();
+        const data = await projectApi.getProjectsByLeader(user.userId);
+        setProjects(data);
+      } catch (error) {
+        console.error('Failed to fetch projects:', error);
+        toast.error('Failed to load your missions.');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
+
+  const filtered = projects.filter(p => {
+    if (skill === 'All Skills') return true;
+    return p.requiredSkills.toLowerCase().includes(skill.toLowerCase());
+  });
+
   return (
     <section className="min-h-[calc(100vh-2rem)] bg-[linear-gradient(180deg,#f7f8ff_0%,#ffffff_18%,#ffffff_100%)] px-4 py-6 sm:px-6 lg:px-8">
       <div className="mx-auto flex w-full max-w-7xl flex-col gap-10">
-        <header className="max-w-4xl space-y-5 pt-4">
+        <header className="max-w-4xl space-y-5 pt-4 text-left">
           <p className="text-xs font-bold uppercase tracking-[0.32em] text-[#564af7]">Mission Board</p>
           <h1 className="text-[clamp(2.8rem,6vw,4.75rem)] font-light leading-none tracking-[-0.04em] text-[#151b2a]">
             Explore Missions
           </h1>
           <p className="max-w-3xl text-base leading-7 text-slate-500 sm:text-lg sm:leading-8">
-            Join thousands of students in the Mua Hè Xanh movement. Filter by your expertise or preferred location
-            to find the mission that resonates with your purpose.
+            Manage your Mua Hè Xanh campaigns. Review volunteer applications and track the progress of your active missions.
           </p>
         </header>
 
         <section className="flex flex-col gap-4 lg:flex-row lg:items-end lg:gap-6">
-          <SelectField label="Location" value="All Locations" />
-          <SelectField label="Skills" value="All Skills" />
+          <SelectField label="Skills" value={skill} options={SKILL_OPTIONS} onChange={setSkill} />
 
           <button
             type="button"
-            className="h-14 rounded-2xl bg-[#e2e7fd] px-8 text-[0.98rem] font-bold text-[#564af7] shadow-[0_16px_34px_-28px_rgba(86,74,247,0.65)] transition hover:bg-[#d8dffb] lg:min-w-[10rem]"
+            className="h-14 rounded-2xl bg-[#564af7] px-8 text-[0.98rem] font-bold text-white shadow-[0_16px_34px_-28px_rgba(86,74,247,0.65)] transition hover:bg-[#4539e6] lg:min-w-[10rem]"
           >
             Apply Filters
           </button>
         </section>
 
-        <section className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
-          {missions.map((mission) => (
-            <MissionCard key={mission.title} mission={mission} />
-          ))}
-        </section>
+        {loading ? (
+          <div className="flex justify-center items-center py-20">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#564af7]"></div>
+          </div>
+        ) : filtered.length === 0 ? (
+          <div className="text-center py-20 text-gray-400 font-medium bg-gray-50 rounded-3xl border border-gray-100 border-dashed">
+            No missions found. Start by creating a new mission.
+          </div>
+        ) : (
+          <section className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
+            {filtered.map((mission) => (
+              <MissionCard key={mission.id} mission={mission} />
+            ))}
+          </section>
+        )}
       </div>
     </section>
   );

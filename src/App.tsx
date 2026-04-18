@@ -35,7 +35,7 @@ export default function App() {
           {/* Community Leader Placeholder Routes */}
           <Route element={<ProtectedRoute allowedRoles={['COMMUNITY_LEADER']} />}>
             <Route path="/leader/dashboard" element={<MissionBoard />} />
-            <Route path="/leader/applications" element={<VolunteerApplication />} />
+            <Route path="/leader/projects/:projectId/volunteers/:type" element={<VolunteerApplication />} />
           </Route>
 
           {/* Uni Admin Placeholder Routes */}
