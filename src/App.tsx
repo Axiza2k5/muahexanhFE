@@ -7,6 +7,7 @@ import StudentDiscoveryDashboard from '@/pages/StudentDiscoveryDashboard';
 import StudentProjectDetail from '@/pages/StudentProjectDetail';
 import ApplicationStatusTracker from '@/pages/ApplicationStatusTracker';
 import ComingSoon from '@/pages/ComingSoon';
+import AdminDashboard from '@/pages/AdminDashboard';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
 import ProfilePage from '@/pages/ProfilePage';
 import { Toaster } from 'react-hot-toast';
@@ -35,7 +36,7 @@ export default function App() {
 
           {/* Uni Admin Placeholder Routes */}
           <Route element={<ProtectedRoute allowedRoles={['UNI_ADMIN']} />}>
-            <Route path="/admin/dashboard" element={<ComingSoon />} />
+            <Route path="/admin/dashboard" element={<AdminDashboard />} />
           </Route>
 
           {/* Shared Routes */}
