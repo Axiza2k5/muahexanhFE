@@ -29,7 +29,7 @@ export default function App() {
             <Route path="/projects" element={<StudentDiscoveryDashboard />} />
             <Route path="/missions" element={<MissionBoard />} />
             <Route path="/projects/:id" element={<StudentProjectDetail />} />
-            <Route path="/applications" element={<VolunteerApplication />} />
+            <Route path="/applications" element={<ApplicationStatusTracker />} />
             <Route path="/applications/status" element={<ApplicationStatusTracker />} />
 
           </Route>
@@ -38,6 +38,7 @@ export default function App() {
           <Route element={<ProtectedRoute allowedRoles={['COMMUNITY_LEADER']} />}>
             <Route path="/leader/dashboard" element={<MissionBoard />} />
             <Route path="/leader/projects/:projectId/volunteers/:type" element={<VolunteerApplication />} />
+            <Route path="/leader/applications" element={<VolunteerApplication />} />
           </Route>
 
           {/* Uni Admin Placeholder Routes */}
