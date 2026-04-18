@@ -85,7 +85,7 @@ function MissionCard({ mission }: { mission: ProjectApiRes }) {
           {tags.map((tag) => (
             <span
               key={tag}
-              className="rounded-full bg-[#f2f3ff] px-3.5 py-1.5 text-[0.65rem] font-bold uppercase tracking-[0.14em] text-[#564af7]"
+              className="inline-flex items-center justify-center rounded-full bg-[#f2f3ff] px-3.5 py-1.5 text-center text-[0.65rem] font-bold uppercase tracking-[0.14em] text-[#564af7]"
             >
               {tag}
             </span>
