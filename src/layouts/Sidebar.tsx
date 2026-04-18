@@ -42,6 +42,16 @@ const NAV_ITEMS: NavItem[] = [
       </svg>
     ),
   },
+  {
+    label: 'Create Project',
+    to: '/createproject',
+    allowedRoles: ['COMMUNITY_LEADER'],
+    icon: (
+      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+      </svg>
+    ),
+  },
   // Uni Admin Items
   {
     label: 'Admin Panel',

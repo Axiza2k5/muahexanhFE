@@ -9,6 +9,7 @@ import StudentProjectDetail from '@/pages/StudentProjectDetail';
 import ApplicationStatusTracker from '@/pages/ApplicationStatusTracker';
 import VolunteerApplication from '@/pages/VolunteerApplication';
 import ComingSoon from '@/pages/ComingSoon';
+import CreateProjectPage from '@/pages/CreateProject';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
 import ProfilePage from '@/pages/ProfilePage';
 import MissionBoard from '@/pages/MissionBoard';
@@ -39,6 +40,7 @@ export default function App() {
             <Route path="/leader/dashboard" element={<MissionBoard />} />
             <Route path="/leader/projects/:projectId/volunteers/:type" element={<VolunteerApplication />} />
             <Route path="/leader/applications" element={<VolunteerApplication />} />
+            <Route path="/createproject" element={<CreateProjectPage />} />
           </Route>
 
           {/* Uni Admin Placeholder Routes */}
