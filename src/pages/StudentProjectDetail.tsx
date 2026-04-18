@@ -8,14 +8,28 @@ export default function StudentProjectDetail() {
   const navigate = useNavigate();
   const [project, setProject] = useState<ProjectApiRes | null>(null);
   const [loading, setLoading] = useState(true);
+  const [applicationStatus, setApplicationStatus] = useState<string | null>(null);
+  const [applying, setApplying] = useState(false);
 
   useEffect(() => {
-    const fetchProject = async () => {
+    const fetchProjectAndStatus = async () => {
       if (!id) return;
       try {
         setLoading(true);
-        const data = await projectApi.getProjectById(id);
-        setProject(data);
+        const [projectData, statusData] = await Promise.allSettled([
+          projectApi.getProjectById(id),
+          projectApi.getApplicationStatus(id),
+        ]);
+
+        if (projectData.status === 'fulfilled') {
+          setProject(projectData.value);
+        } else {
+          throw projectData.reason;
+        }
+
+        if (statusData.status === 'fulfilled') {
+          setApplicationStatus(statusData.value.status);
+        }
       } catch (error) {
         console.error('Failed to fetch project detail:', error);
         toast.error('Failed to load mission details.');
@@ -24,8 +38,23 @@ export default function StudentProjectDetail() {
         setLoading(false);
       }
     };
-    fetchProject();
+    fetchProjectAndStatus();
   }, [id, navigate]);
+
+  const handleApply = async () => {
+    if (!project) return;
+    try {
+      setApplying(true);
+      await projectApi.applyToProject(project.id);
+      setApplicationStatus('APPLIED');
+      toast.success('Successfully applied for the mission!');
+    } catch (error: any) {
+      const message = error.response?.data?.message || 'Failed to apply for the mission.';
+      toast.error(message);
+    } finally {
+      setApplying(false);
+    }
+  };
 
   const parseSkills = (skillsStr: string) => {
     if (!skillsStr) return [];
@@ -175,8 +204,16 @@ export default function StudentProjectDetail() {
             </div>
 
             <div className="pt-4 space-y-3">
-              <button className="w-full bg-rocket text-white font-bold py-4 rounded-2xl text-base shadow-xl shadow-rocket/20 hover:bg-indigo-700 transition-all active:scale-95">
-                Apply for Mission
+              <button
+                disabled={!!applicationStatus || applying}
+                onClick={handleApply}
+                className={`w-full text-white font-bold py-4 rounded-2xl text-base shadow-xl transition-all active:scale-95 ${
+                  applicationStatus
+                    ? 'bg-gray-400 cursor-not-allowed shadow-none'
+                    : 'bg-rocket shadow-rocket/20 hover:bg-indigo-700'
+                }`}
+              >
+                {applying ? 'Processing...' : applicationStatus ? `Status: ${applicationStatus}` : 'Apply for Mission'}
               </button>
               <p className="text-center text-[10px] text-gray-400 font-bold uppercase tracking-wider">Application ends: {formattedDeadline}</p>
             </div>

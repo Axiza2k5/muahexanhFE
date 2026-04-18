@@ -1,53 +1,14 @@
 import { useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { projectApi, ProjectApplicationRes } from '@/api/project';
+import toast from 'react-hot-toast';
 
-type AppStatus = 'IN_PROGRESS' | 'APPROVED' | 'NOT_SELECTED';
-
-const APPLICATIONS = [
-  {
-    id: 'APP-001',
-    title: 'Eco-Warrior: Coastal Cleanup',
-    appliedDate: 'Oct 12, 2023',
-    status: 'IN_PROGRESS' as AppStatus,
-    steps: [
-      { label: 'Submitted', date: 'Oct 12', done: true, current: false },
-      { label: 'Admin Verified', date: 'Oct 14', done: true, current: false },
-      { label: 'Leader Reviewing', date: 'Current Stage', done: false, current: true },
-      { label: 'Final Decision', date: 'Pending', done: false, current: false },
-    ],
-    note: null,
-  },
-  {
-    id: 'APP-002',
-    title: 'Urban Literacy Workshop',
-    appliedDate: 'Sept 28, 2023',
-    status: 'APPROVED' as AppStatus,
-    steps: [
-      { label: 'Submitted', date: '', done: true, current: false },
-      { label: 'Verified', date: '', done: true, current: false },
-      { label: 'Reviewed', date: '', done: true, current: false },
-      { label: 'Approved', date: '', done: true, current: false },
-    ],
-    note: null,
-  },
-  {
-    id: 'APP-003',
-    title: 'Tech for Seniors Program',
-    appliedDate: 'Aug 15, 2023',
-    status: 'NOT_SELECTED' as AppStatus,
-    steps: [
-      { label: 'Submitted', date: '', done: true, current: false },
-      { label: 'Rejected', date: '', done: false, current: false, rejected: true },
-      { label: 'N/A', date: '', done: false, current: false },
-      { label: 'Final Decision', date: '', done: false, current: false },
-    ],
-    note: "Capacity for this project has been reached. We've saved your profile for future workshops.",
-  },
-];
+type AppStatus = 'APPLIED' | 'ACCEPTED' | 'REJECTED';
 
 const STATUS_META: Record<AppStatus, { label: string; color: string }> = {
-  IN_PROGRESS: { label: 'In Progress', color: 'bg-chewie/10 text-chewie' },
-  APPROVED: { label: 'Mission Approved', color: 'bg-yoda/10 text-yoda' },
-  NOT_SELECTED: { label: 'Not Selected', color: 'bg-maul/10 text-maul' },
+  APPLIED: { label: 'In Progress', color: 'bg-chewie/10 text-chewie' },
+  ACCEPTED: { label: 'Mission Approved', color: 'bg-yoda/10 text-yoda' },
+  REJECTED: { label: 'Not Selected', color: 'bg-maul/10 text-maul' },
 };
 
 function StepDot({ done, current, rejected }: { done: boolean; current?: boolean; rejected?: boolean }) {
@@ -87,6 +48,49 @@ function StepDot({ done, current, rejected }: { done: boolean; current?: boolean
 
 export default function ApplicationStatusTracker() {
   const navigate = useNavigate();
+  const [applications, setApplications] = useState<ProjectApplicationRes[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchApplications = async () => {
+      try {
+        setLoading(true);
+        const data = await projectApi.getMyApplications();
+        setApplications(data);
+      } catch (error) {
+        console.error('Failed to fetch applications:', error);
+        toast.error('Failed to load your applications.');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchApplications();
+  }, []);
+
+  const formatDate = (dateStr: string) => {
+    return new Date(dateStr).toLocaleDateString('en-GB', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+    });
+  };
+
+  const getSteps = (status: string) => {
+    return [
+      { label: 'Submitted', date: 'Done', done: true, current: false },
+      { label: 'Verified', date: 'Done', done: true, current: false },
+      { label: 'Reviewed', date: status === 'APPLIED' ? 'Pending' : 'Done', done: status !== 'APPLIED', current: status === 'APPLIED' },
+      { label: 'Decision', date: status === 'APPLIED' ? 'TBD' : 'Final', done: status !== 'APPLIED', current: false, rejected: status === 'REJECTED' },
+    ];
+  };
+
+  if (loading) {
+    return (
+      <div className="flex h-[60vh] items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-rocket"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-full bg-white">
@@ -98,12 +102,21 @@ export default function ApplicationStatusTracker() {
           Monitor your journey toward impact. Every mission starts with a single step, and here is where your story unfolds.
         </p>
 
-        {/* Application cards */}
+        {/* Application list */}
         <div className="space-y-4 mb-10">
-          {APPLICATIONS.map(app => {
-            const meta = STATUS_META[app.status];
-            const isApproved = app.status === 'APPROVED';
-            const isRejected = app.status === 'NOT_SELECTED';
+          {applications.length === 0 ? (
+            <div className="text-center py-20 bg-gray-50 rounded-[32px] border-2 border-dashed border-gray-200">
+              <p className="text-gray-400 font-bold">No active applications found.</p>
+              <button onClick={() => navigate('/projects')} className="text-rocket font-bold mt-2 hover:underline">
+                Discover Missions
+              </button>
+            </div>
+          ) : (
+            applications.map(app => {
+              const meta = STATUS_META[app.status];
+              const isApproved = app.status === 'ACCEPTED';
+              const isRejected = app.status === 'REJECTED';
+              const steps = getSteps(app.status);
 
             return (
               <div key={app.id} className="bg-white border border-gray-100 rounded-2xl shadow-sm p-6">
@@ -113,12 +126,12 @@ export default function ApplicationStatusTracker() {
                     <span className={`inline-block text-[11px] font-black uppercase tracking-widest px-3 py-1 rounded-full mb-3 ${meta.color}`}>
                       {meta.label}
                     </span>
-                    <h3 className="text-2xl font-bold text-darkside leading-tight mb-1">{app.title}</h3>
+                    <h3 className="text-2xl font-bold text-darkside leading-tight mb-1">{app.projectTitle}</h3>
                     <p className="text-sm text-gray-400 flex items-center gap-1.5 mb-4">
                       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                       </svg>
-                      Applied: {app.appliedDate}
+                      Applied: {formatDate(app.appliedAt)}
                     </p>
                     {isApproved && (
                       <button className="bg-yoda/10 text-yoda font-bold text-sm px-5 py-2.5 rounded-xl hover:bg-yoda hover:text-white transition-colors">
@@ -127,7 +140,7 @@ export default function ApplicationStatusTracker() {
                     )}
                     {!isApproved && !isRejected && (
                       <button
-                        onClick={() => navigate('/projects/1')}
+                        onClick={() => navigate(`/projects/${app.projectId}`)}
                         className="text-rocket font-bold text-sm flex items-center gap-1 hover:underline"
                       >
                         View Details
@@ -136,26 +149,21 @@ export default function ApplicationStatusTracker() {
                         </svg>
                       </button>
                     )}
-                    {app.note && (
-                      <div className="mt-4 bg-maul/5 border-l-4 border-maul rounded-r-xl p-3 max-w-xs">
-                        <p className="text-sm text-maul font-medium leading-relaxed">{app.note}</p>
-                      </div>
-                    )}
                   </div>
 
                   {/* Right: Progress Steps */}
                   <div className="flex flex-col items-end pt-2">
                     <div className="flex items-center">
-                      {app.steps.map((step, i) => (
+                      {steps.map((step, i) => (
                         <div key={step.label} className="flex items-center">
                           <div className="flex flex-col items-center">
-                            <StepDot done={step.done} current={step.current} rejected={(step as any).rejected} />
-                            <p className={`text-[11px] font-bold mt-1.5 text-center ${step.current ? 'text-chewie' : (step as any).rejected ? 'text-maul' : step.done ? 'text-yoda' : 'text-gray-400'}`}>
+                            <StepDot done={step.done} current={step.current} rejected={step.rejected} />
+                            <p className={`text-[11px] font-bold mt-1.5 text-center ${step.current ? 'text-chewie' : step.rejected ? 'text-maul' : step.done ? 'text-yoda' : 'text-gray-400'}`}>
                               {step.label}
                             </p>
                             <p className="text-[10px] text-gray-400 text-center">{step.date}</p>
                           </div>
-                          {i < app.steps.length - 1 && (
+                          {i < steps.length - 1 && (
                             <div className={`w-12 h-0.5 mx-1 mb-6 ${step.done && !step.current ? 'bg-yoda' : 'bg-gray-200'}`}></div>
                           )}
                         </div>
@@ -165,7 +173,7 @@ export default function ApplicationStatusTracker() {
                 </div>
               </div>
             );
-          })}
+          }))}
         </div>
 
         {/* Bottom stats */}
@@ -174,7 +182,7 @@ export default function ApplicationStatusTracker() {
           <div className="bg-rocket rounded-2xl p-6 text-white">
             <h3 className="text-xl font-bold mb-2">Summer Impact Summary</h3>
             <p className="text-white/70 text-sm mb-6">
-              You've applied for 3 missions so far. Your contribution helps over 500 community members in rural districts.
+              You've applied for {applications.length} {applications.length === 1 ? 'mission' : 'missions'} so far. Your contribution helps community members in rural districts.
             </p>
             <div className="grid grid-cols-2 gap-3">
               <div className="bg-white/10 rounded-xl p-4">
