@@ -1,10 +1,10 @@
+export type UserRole = 'STUDENT' | 'COMMUNITY_LEADER' | 'UNI_ADMIN';
+
 export interface ApiResponse<T> {
   data: T;
   message: string;
   status: number;
 }
-
-export type UserRole = 'student' | 'leader' | 'admin';
 
 export interface Profile {
   user_id: number;
