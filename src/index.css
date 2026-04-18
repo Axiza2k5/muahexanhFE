@@ -1,3 +1,11 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer utilities {
+  /* Hide the default password reveal button in Edge/IE */
+  input::-ms-reveal,
+  input::-ms-clear {
+    display: none;
+  }
+}
