@@ -7,10 +7,12 @@ import CreateLeaderAccountPage from '@/pages/CreateLeaderAccountPage';
 import StudentDiscoveryDashboard from '@/pages/StudentDiscoveryDashboard';
 import StudentProjectDetail from '@/pages/StudentProjectDetail';
 import ApplicationStatusTracker from '@/pages/ApplicationStatusTracker';
+import VolunteerApplication from '@/pages/VolunteerApplication';
 import ComingSoon from '@/pages/ComingSoon';
 import CreateProjectPage from '@/pages/CreateProject';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
 import ProfilePage from '@/pages/ProfilePage';
+import MissionBoard from '@/pages/MissionBoard';
 import { Toaster } from 'react-hot-toast';
 
 export default function App() {
@@ -26,14 +28,18 @@ export default function App() {
           {/* Student Protected Routes */}
           <Route element={<ProtectedRoute allowedRoles={['STUDENT']} />}>
             <Route path="/projects" element={<StudentDiscoveryDashboard />} />
+            <Route path="/missions" element={<MissionBoard />} />
             <Route path="/projects/:id" element={<StudentProjectDetail />} />
             <Route path="/applications" element={<ApplicationStatusTracker />} />
+            <Route path="/applications/status" element={<ApplicationStatusTracker />} />
 
           </Route>
 
           {/* Community Leader Placeholder Routes */}
           <Route element={<ProtectedRoute allowedRoles={['COMMUNITY_LEADER']} />}>
-            <Route path="/leader/dashboard" element={<ComingSoon />} />
+            <Route path="/leader/dashboard" element={<MissionBoard />} />
+            <Route path="/leader/projects/:projectId/volunteers/:type" element={<VolunteerApplication />} />
+            <Route path="/leader/applications" element={<VolunteerApplication />} />
             <Route path="/createproject" element={<CreateProjectPage />} />
           </Route>
 
