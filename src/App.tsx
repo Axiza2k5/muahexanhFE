@@ -7,6 +7,7 @@ import StudentDiscoveryDashboard from '@/pages/StudentDiscoveryDashboard';
 import StudentProjectDetail from '@/pages/StudentProjectDetail';
 import ApplicationStatusTracker from '@/pages/ApplicationStatusTracker';
 import ComingSoon from '@/pages/ComingSoon';
+import ProtectedRoute from '@/components/auth/ProtectedRoute';
 import ProfilePage from '@/pages/ProfilePage';
 import { Toaster } from 'react-hot-toast';
 
@@ -18,14 +19,30 @@ export default function App() {
         <Route path="/" element={<Navigate to="/login" replace />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
+
         <Route element={<MainLayout />}>
-          <Route path="/home" element={<HomePage />} />
-          <Route path="/projects" element={<StudentDiscoveryDashboard />} />
-          <Route path="/projects/:id" element={<StudentProjectDetail />} />
-          <Route path="/applications" element={<ApplicationStatusTracker />} />
-          <Route path="/messages" element={<ComingSoon />} />
-          <Route path="/history" element={<ComingSoon />} />
-          <Route path="/profile" element={<ProfilePage />} />
+          {/* Student Protected Routes */}
+          <Route element={<ProtectedRoute allowedRoles={['STUDENT']} />}>
+            <Route path="/projects" element={<StudentDiscoveryDashboard />} />
+            <Route path="/projects/:id" element={<StudentProjectDetail />} />
+            <Route path="/applications" element={<ApplicationStatusTracker />} />
+          </Route>
+
+          {/* Community Leader Placeholder Routes */}
+          <Route element={<ProtectedRoute allowedRoles={['COMMUNITY_LEADER']} />}>
+            <Route path="/leader/dashboard" element={<ComingSoon />} />
+          </Route>
+
+          {/* Uni Admin Placeholder Routes */}
+          <Route element={<ProtectedRoute allowedRoles={['UNI_ADMIN']} />}>
+            <Route path="/admin/dashboard" element={<ComingSoon />} />
+          </Route>
+
+          {/* Shared Routes */}
+          <Route element={<ProtectedRoute />}>
+            <Route path="/home" element={<HomePage />} />
+            <Route path="/profile" element={<ProfilePage />} />
+          </Route>
         </Route>
       </Routes>
     </BrowserRouter>
