@@ -6,6 +6,7 @@ import RegisterPage from '@/pages/RegisterPage';
 import StudentDiscoveryDashboard from '@/pages/StudentDiscoveryDashboard';
 import StudentProjectDetail from '@/pages/StudentProjectDetail';
 import ApplicationStatusTracker from '@/pages/ApplicationStatusTracker';
+import VolunteerApplication from '@/pages/VolunteerApplication';
 import ComingSoon from '@/pages/ComingSoon';
 import ProfilePage from '@/pages/ProfilePage';
 import { Toaster } from 'react-hot-toast';
@@ -22,7 +23,8 @@ export default function App() {
           <Route path="/home" element={<HomePage />} />
           <Route path="/projects" element={<StudentDiscoveryDashboard />} />
           <Route path="/projects/:id" element={<StudentProjectDetail />} />
-          <Route path="/applications" element={<ApplicationStatusTracker />} />
+          <Route path="/applications" element={<VolunteerApplication />} />
+          <Route path="/applications/status" element={<ApplicationStatusTracker />} />
           <Route path="/messages" element={<ComingSoon />} />
           <Route path="/history" element={<ComingSoon />} />
           <Route path="/profile" element={<ProfilePage />} />
