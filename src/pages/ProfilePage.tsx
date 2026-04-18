@@ -13,7 +13,7 @@ type SkillOption = {
 };
 
 const PROFILE_STORAGE_KEY = 'profile_data';
-const ROLE_STORAGE_KEY = 'user_role';
+const ROLE_STORAGE_KEY = 'role'; // Standardized to match rest of app
 
 const skillOptions: SkillOption[] = [
   { id: 'teaching', title: 'Teaching', description: 'Literacy & Math' },
@@ -25,7 +25,7 @@ const skillOptions: SkillOption[] = [
 ];
 
 const defaultProfileByRole: Record<UserRole, Profile> = {
-  student: {
+  STUDENT: {
     user_id: 1,
     full_name: '',
     email: '',
@@ -34,7 +34,7 @@ const defaultProfileByRole: Record<UserRole, Profile> = {
     abilities_description: '',
     organization_name: 'Green Summer Youth Union',
   },
-  leader: {
+  COMMUNITY_LEADER: {
     user_id: 1,
     full_name: '',
     email: '',
@@ -43,7 +43,7 @@ const defaultProfileByRole: Record<UserRole, Profile> = {
     abilities_description: '',
     organization_name: '',
   },
-  admin: {
+  UNI_ADMIN: {
     user_id: 1,
     full_name: '',
     email: '',
@@ -54,40 +54,16 @@ const defaultProfileByRole: Record<UserRole, Profile> = {
   },
 };
 
-function isUserRole(value: string | null): value is UserRole {
-  return value === 'student' || value === 'leader' || value === 'admin';
-}
-
-function getCurrentRole(): UserRole {
-  const role = localStorage.getItem(ROLE_STORAGE_KEY);
-  return isUserRole(role) ? role : 'student';
-}
-
-function getStoredProfile(role: UserRole): Profile {
-  const rawProfile = localStorage.getItem(PROFILE_STORAGE_KEY);
-
-  if (!rawProfile) {
-    return defaultProfileByRole[role];
-  }
-
-  try {
-    const parsed = JSON.parse(rawProfile) as Partial<Profile>;
-    return normalizeProfile(parsed, role);
-  } catch {
-    return defaultProfileByRole[role];
-  }
-}
-
 function isValidEmail(email: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
 }
 
 function getInputClassName(readOnly: boolean, hasError = false): string {
   return [
-    'w-full rounded-xl border px-4 py-3 text-[15px] text-slate-900 outline-none transition',
-    readOnly ? 'border-slate-200 bg-slate-50' : 'border-slate-300 bg-white',
-    readOnly ? 'cursor-default' : 'focus:border-[#564AF7] focus:ring-4 focus:ring-[#564AF7]/10',
-    hasError ? 'border-red-500 focus:border-red-500 focus:ring-red-100' : '',
+    'w-full rounded-2xl border px-4 py-3 text-[15px] text-darkside outline-none transition duration-200',
+    readOnly ? 'border-gray-100 bg-gray-50' : 'border-gray-200 bg-white',
+    readOnly ? 'cursor-default' : 'focus:border-rocket focus:ring-4 focus:ring-rocket/10',
+    hasError ? 'border-maul focus:border-maul focus:ring-maul/10' : '',
   ]
     .filter(Boolean)
     .join(' ');
@@ -95,36 +71,18 @@ function getInputClassName(readOnly: boolean, hasError = false): string {
 
 function getSkillButtonClassName(selected: boolean, disabled: boolean): string {
   return [
-    'w-full rounded-xl border p-6 text-left transition duration-200',
+    'w-full rounded-2xl border p-6 text-left transition duration-300',
     selected
-      ? 'border-[#564AF7] bg-[#564AF7] text-white shadow-[0_20px_40px_-18px_rgba(86,74,247,0.45)]'
-      : 'border-slate-200 bg-white text-slate-900 hover:border-[#564AF7]/40 hover:shadow-[0_10px_30px_-18px_rgba(17,24,39,0.15)]',
+      ? 'border-rocket bg-rocket text-white shadow-xl shadow-rocket/20'
+      : 'border-gray-100 bg-white text-darkside hover:border-rocket/40 hover:shadow-lg hover:shadow-rocket/5',
     disabled ? 'cursor-default' : 'cursor-pointer',
   ]
     .filter(Boolean)
     .join(' ');
 }
 
-function normalizeProfile(profile: Partial<Profile>, role: UserRole): Profile {
-  const legacySkills = Array.isArray((profile as { selected_skills?: unknown }).selected_skills)
-    ? ((profile as { selected_skills?: unknown[] }).selected_skills ?? []).filter(
-        (skill): skill is string => typeof skill === 'string'
-      )
-    : [];
-
-  const abilitiesDescription =
-    typeof profile.abilities_description === 'string'
-      ? profile.abilities_description
-      : legacySkills.join(';');
-
-  return {
-    ...defaultProfileByRole[role],
-    ...profile,
-    abilities_description: abilitiesDescription,
-  };
-}
-
-function parseSkills(value: string): string[] {
+function parseSkills(value: string | undefined): string[] {
+  if (!value) return [];
   return value
     .split(';')
     .map((skill) => skill.trim())
@@ -136,43 +94,24 @@ function serializeSkills(skills: string[]): string {
 }
 
 export default function ProfilePage() {
-  const role = useMemo(() => getCurrentRole(), []);
-  const [profile, setProfile] = useState<Profile>(() => getStoredProfile(role));
-  const [draftProfile, setDraftProfile] = useState<Profile>(profile);
+  const userRole = (localStorage.getItem(ROLE_STORAGE_KEY) || 'STUDENT') as UserRole;
+  const [profile, setProfile] = useState<Profile>(defaultProfileByRole[userRole]);
+  const [draftProfile, setDraftProfile] = useState<Profile>(defaultProfileByRole[userRole]);
   const [isEditing, setIsEditing] = useState(false);
   const [errors, setErrors] = useState<ProfileErrors>({});
-  const [saveMessage, setSaveMessage] = useState('');
   const [loading, setLoading] = useState(true);
-  const [fetchError, setFetchError] = useState('');
 
-  const isStudent = role === 'student';
+  const isStudent = userRole === 'STUDENT';
 
-  // Fetch profile from API on component mount
   useEffect(() => {
     const fetchProfile = async () => {
       try {
         setLoading(true);
-        setFetchError('');
-
-        // Get JWT token from localStorage (stored as 'accessToken' during login)
-        const token = localStorage.getItem('accessToken');
-        console.log('Access token from localStorage:', token);
-        
-        if (!token) {
-          setFetchError('Not authenticated. Please log in first.');
-          throw new Error('Not authenticated');
-        }
-
-        console.log('Using token:', token.substring(0, 20) + '...');
-
-        // Fetch profile from API (axios interceptor will add the token automatically)
         const response = await axiosInstance.get('/v1/users/me/profile');
         const apiProfile = response.data;
-        console.log('Profile fetched:', apiProfile);
-
-        // Map API response to local Profile format
+        
         const mappedProfile: Profile = {
-          user_id: apiProfile.userId,
+          user_id: apiProfile.userId || 1,
           full_name: apiProfile.fullName || '',
           email: apiProfile.email || '',
           phone_number: apiProfile.phoneNumber || '',
@@ -183,18 +122,16 @@ export default function ProfilePage() {
 
         setProfile(mappedProfile);
         setDraftProfile(mappedProfile);
-        localStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify(mappedProfile));
       } catch (error: any) {
         console.error('Failed to fetch profile:', error);
-        setFetchError(error.response?.data?.message || error.message || 'Failed to load profile. Using cached data.');
-        // Fall back to stored profile on error
+        toast.error('Using local profile session.');
       } finally {
         setLoading(false);
       }
     };
 
     fetchProfile();
-  }, []);
+  }, [userRole]);
 
   const validate = (): boolean => {
     const nextErrors: ProfileErrors = {};
@@ -214,14 +151,12 @@ export default function ProfilePage() {
   };
 
   const handleStartEditing = () => {
-    setSaveMessage('');
     setErrors({});
     setDraftProfile(profile);
     setIsEditing(true);
   };
 
   const handleCancelEditing = () => {
-    setSaveMessage('');
     setErrors({});
     setDraftProfile(profile);
     setIsEditing(false);
@@ -231,44 +166,28 @@ export default function ProfilePage() {
     event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
     const { name, value } = event.target;
-
-    setDraftProfile((previous) => ({
-      ...previous,
-      [name]: value,
-    }));
+    setDraftProfile((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleSkillToggle = (skillId: string) => {
-    if (!isEditing || !isStudent) {
-      return;
-    }
+    if (!isEditing || !isStudent) return;
 
-    setDraftProfile((previous) => {
-      const selectedSkills = parseSkills(previous.abilities_description);
-      const hasSkill = selectedSkills.includes(skillId);
-
+    setDraftProfile((prev) => {
+      const selected = parseSkills(prev.abilities_description);
+      const exists = selected.includes(skillId);
+      const nextSkills = exists ? selected.filter(s => s !== skillId) : [...selected, skillId];
+      
       return {
-        ...previous,
-        abilities_description: serializeSkills(
-          hasSkill
-            ? selectedSkills.filter((selectedSkill) => selectedSkill !== skillId)
-            : [...selectedSkills, skillId]
-        ),
+        ...prev,
+        abilities_description: serializeSkills(nextSkills),
       };
     });
-
-    setErrors((previous) => ({
-      ...previous,
-      abilities_description: undefined,
-    }));
   };
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
-    if (!validate()) {
-      return;
-    }
+    if (!validate()) return;
 
     try {
       const payload = {
@@ -283,240 +202,230 @@ export default function ProfilePage() {
       await axiosInstance.put('/v1/users/me/profile', payload);
 
       setProfile(draftProfile);
-      localStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify(draftProfile));
-      setSaveMessage('Profile updated successfully.');
       setIsEditing(false);
-      toast.success('Hồ sơ đã được cập nhật thành công!');
+      toast.success('Profile updated successfully!');
     } catch (error: any) {
       console.error('Failed to update profile:', error);
-      toast.error(error.response?.data?.message || 'Cập nhật hồ sơ thất bại. Vui lòng thử lại.');
+      toast.error(error.response?.data?.message || 'Failed to update profile.');
     }
   };
 
-  const profileData = isEditing ? draftProfile : profile;
-
-  const isOrganizationReadOnly = !isEditing || isStudent;
-  const selectedSkills = new Set(parseSkills(profileData.abilities_description));
-
   if (loading) {
     return (
-      <section className="mx-auto w-full max-w-6xl py-8 lg:py-12">
-        <div className="py-12 text-center">
-          <p className="text-slate-600">Loading profile...</p>
+      <div className="flex h-[60vh] items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <div className="h-12 w-12 animate-spin rounded-full border-4 border-rocket border-t-transparent shadow-xl shadow-rocket/20"></div>
+          <p className="text-sm font-bold text-darkside animate-pulse">Syncing Profile...</p>
         </div>
-      </section>
+      </div>
     );
   }
 
-  return (
-    <section className="mx-auto w-full max-w-6xl py-8 lg:py-12">
-      <div className="mb-8 flex flex-col gap-4">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-          <div className="max-w-3xl space-y-3">
-            <h1 className="text-4xl font-bold tracking-tight text-[#121827] sm:text-5xl lg:text-6xl">
-              Complete your profile.
-            </h1>
-            <p className="max-w-2xl text-base leading-7 text-slate-600 sm:text-lg">
-              Keep your profile ready for mission matching with up-to-date contact details and
-              selected skills.
-            </p>
-          </div>
+  const currentProfile = isEditing ? draftProfile : profile;
+  const selectedSkills = new Set(parseSkills(currentProfile.abilities_description));
 
-          {!isEditing && !loading ? (
-            <button
-              type="button"
-              onClick={handleStartEditing}
-              className="inline-flex w-fit items-center justify-center rounded-xl bg-[#564AF7] px-6 py-3 text-sm font-semibold text-white shadow-[0_18px_40px_-16px_rgba(86,74,247,0.5)] transition hover:bg-[#4b40dd]"
-            >
-              Edit Profile
-            </button>
-          ) : null}
+  return (
+    <div className="max-w-5xl mx-auto p-8 space-y-12">
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+        <div className="space-y-4">
+          <p className="inline-block px-3 py-1 rounded-full bg-rocket/5 text-rocket text-[10px] font-black uppercase tracking-widest">
+            {userRole.replace('_', ' ')} Settings
+          </p>
+          <h1 className="text-6xl font-extrabold text-darkside tracking-tighter leading-none">
+            Your Profile
+          </h1>
+          <p className="max-w-xl text-gray-500 font-medium text-lg leading-relaxed">
+            Personalize your identity and optimize your skill matching for upcoming missions.
+          </p>
         </div>
+
+        {!isEditing && (
+          <button
+            onClick={handleStartEditing}
+            className="flex items-center gap-2 bg-rocket text-white font-bold py-4 px-8 rounded-2xl shadow-xl shadow-rocket/20 hover:shadow-rocket/30 hover:-translate-y-1 transition-all active:scale-95"
+          >
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+            </svg>
+            Edit Profile
+          </button>
+        )}
       </div>
 
-      {fetchError && (
-        <div className="mb-6 rounded-lg bg-yellow-50 p-4 text-sm text-yellow-700 border border-yellow-200">
-          {fetchError}
-        </div>
-      )}
+      <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="lg:col-span-2 space-y-8">
+          <section className="bg-white border border-gray-100 rounded-[32px] p-8 space-y-8 shadow-sm">
+             <div className="flex items-center justify-between border-b border-gray-50 pb-6">
+                <h2 className="text-2xl font-bold text-darkside tracking-tight">Identity Details</h2>
+                <div className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${isEditing ? 'bg-orange-50 text-orange-500' : 'bg-green-50 text-green-500'}`}>
+                  {isEditing ? 'Drafting' : 'Verified'}
+                </div>
+             </div>
 
-      <form onSubmit={handleSubmit} className="space-y-8">
-        <div className="space-y-8">
-          <section className="rounded-[24px] border border-slate-200 bg-white p-6 shadow-[0_18px_50px_-28px_rgba(15,23,42,0.22)] sm:p-8">
-            <div className="mb-6 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-              <div>
-                <h2 className="text-2xl font-bold text-[#121827]">Personal Information</h2>
-                <p className="mt-1 text-sm text-slate-500">
-                  Role: {isStudent ? 'Student' : 'Community Leader'}
-                </p>
-              </div>
-              <div className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-slate-600">
-                {isEditing ? 'Editing mode' : 'Read only'}
-              </div>
-            </div>
-
-            <div className="space-y-5">
-              <div>
-                <label htmlFor="full_name" className="mb-2 block text-xs font-bold uppercase tracking-[0.08em] text-slate-500">
-                  Full legal name
-                </label>
-                <input
-                  id="full_name"
-                  name="full_name"
-                  value={profileData.full_name}
-                  onChange={handleFieldChange}
-                  readOnly={!isEditing}
-                  className={getInputClassName(!isEditing, Boolean(errors.full_name))}
-                  placeholder="Nguyen Van A"
-                />
-                {errors.full_name ? (
-                  <p className="mt-2 text-sm text-red-600">{errors.full_name}</p>
-                ) : null}
-              </div>
-
-              <div>
-                <label htmlFor="email" className="mb-2 block text-xs font-bold uppercase tracking-[0.08em] text-slate-500">
-                  Email
-                </label>
-                <input
-                  id="email"
-                  name="email"
-                  value={profileData.email}
-                  onChange={handleFieldChange}
-                  readOnly={!isEditing}
-                  className={getInputClassName(!isEditing, Boolean(errors.email))}
-                  placeholder="example@hcmut.edu.vn"
-                />
-                {errors.email ? <p className="mt-2 text-sm text-red-600">{errors.email}</p> : null}
-              </div>
-
-              <div className="grid gap-5 sm:grid-cols-2">
-                <div>
-                  <label htmlFor="phone_number" className="mb-2 block text-xs font-bold uppercase tracking-[0.08em] text-slate-500">
-                    Phone number
-                  </label>
+             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <label className="text-[11px] font-bold uppercase tracking-widest text-gray-400 ml-1">Full Name</label>
                   <input
-                    id="phone_number"
+                    name="full_name"
+                    value={currentProfile.full_name}
+                    onChange={handleFieldChange}
+                    readOnly={!isEditing}
+                    className={getInputClassName(!isEditing, !!errors.full_name)}
+                    placeholder="Nguyen Van A"
+                  />
+                  {errors.full_name && <p className="text-xs text-maul font-semibold ml-1">{errors.full_name}</p>}
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-[11px] font-bold uppercase tracking-widest text-gray-400 ml-1">Email</label>
+                  <input
+                    name="email"
+                    value={currentProfile.email}
+                    onChange={handleFieldChange}
+                    readOnly={!isEditing}
+                    className={getInputClassName(!isEditing, !!errors.email)}
+                    placeholder="example@edu.vn"
+                  />
+                  {errors.email && <p className="text-xs text-maul font-semibold ml-1">{errors.email}</p>}
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-[11px] font-bold uppercase tracking-widest text-gray-400 ml-1">Phone</label>
+                  <input
                     name="phone_number"
-                    value={profileData.phone_number}
+                    value={currentProfile.phone_number}
                     onChange={handleFieldChange}
                     readOnly={!isEditing}
                     className={getInputClassName(!isEditing)}
-                    placeholder="0909090909"
+                    placeholder="0909..."
                   />
                 </div>
 
-                <div>
-                  <label htmlFor="organization_name" className="mb-2 block text-xs font-bold uppercase tracking-[0.08em] text-slate-500">
-                    Organization
-                  </label>
+                <div className="space-y-2">
+                  <label className="text-[11px] font-bold uppercase tracking-widest text-gray-400 ml-1">Organization</label>
                   <input
-                    id="organization_name"
                     name="organization_name"
-                    value={profileData.organization_name}
+                    value={currentProfile.organization_name}
                     onChange={handleFieldChange}
-                    readOnly={isOrganizationReadOnly}
-                    className={getInputClassName(isOrganizationReadOnly)}
-                    placeholder="Green Summer Youth Union"
+                    readOnly={!isEditing || isStudent}
+                    className={getInputClassName(!isEditing || isStudent)}
+                    placeholder="N/A"
                   />
                 </div>
-              </div>
 
-              <div>
-                <label htmlFor="address" className="mb-2 block text-xs font-bold uppercase tracking-[0.08em] text-slate-500">
-                  Address
-                </label>
-                <input
-                  id="address"
-                  name="address"
-                  value={profileData.address}
-                  onChange={handleFieldChange}
-                  readOnly={!isEditing}
-                  className={getInputClassName(!isEditing)}
-                  placeholder="268 Ly Thuong Kiet Street, District 10, Ho Chi Minh City"
-                />
-              </div>
-
-              {saveMessage ? <p className="text-sm font-medium text-emerald-700">{saveMessage}</p> : null}
-            </div>
+                <div className="md:col-span-2 space-y-2">
+                  <label className="text-[11px] font-bold uppercase tracking-widest text-gray-400 ml-1">Address</label>
+                  <input
+                    name="address"
+                    value={currentProfile.address}
+                    onChange={handleFieldChange}
+                    readOnly={!isEditing}
+                    className={getInputClassName(!isEditing)}
+                    placeholder="Full permanent address"
+                  />
+                </div>
+             </div>
           </section>
 
-          <section className="rounded-[24px] border border-slate-200 bg-[#F8F9FF] p-6 shadow-[0_18px_50px_-28px_rgba(15,23,42,0.2)] sm:p-8">
-            <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
-              <div>
-                <h2 className="text-2xl font-bold text-[#121827]">Skill Matrix</h2>
-                <p className="mt-1 text-sm text-slate-600">
-                  Select your strongest areas for mission matching.
-                </p>
-              </div>
-            </div>
+          <section className="bg-white border border-gray-100 rounded-[32px] p-8 space-y-8 shadow-sm">
+             <div className="space-y-1">
+                <h2 className="text-2xl font-bold text-darkside tracking-tight">Skill Matrix</h2>
+                <p className="text-gray-400 text-sm font-medium italic">What are your primary fields of expertise?</p>
+             </div>
 
-            <div className="grid gap-4 sm:grid-cols-2">
-              {skillOptions.map((skill) => {
-                const selected = selectedSkills.has(skill.id);
-
-                return (
-                  <button
-                    key={skill.id}
-                    type="button"
-                    onClick={() => handleSkillToggle(skill.id)}
-                    disabled={!isEditing || !isStudent}
-                    className={getSkillButtonClassName(selected, !isEditing || !isStudent)}
-                  >
-                    <div className="flex items-center justify-between gap-4">
-                      <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-current/10 text-current">
-                        <span className="text-sm font-bold uppercase tracking-[0.16em]">
-                          {skill.title.slice(0, 2)}
-                        </span>
+             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {skillOptions.map((skill) => {
+                  const selected = selectedSkills.has(skill.id);
+                  return (
+                    <button
+                      key={skill.id}
+                      type="button"
+                      onClick={() => handleSkillToggle(skill.id)}
+                      disabled={!isEditing || !isStudent}
+                      className={getSkillButtonClassName(selected, !isEditing || !isStudent)}
+                    >
+                      <div className="flex items-center justify-between mb-4">
+                        <div className={`p-2 rounded-lg ${selected ? 'bg-white/20' : 'bg-rocket/5 text-rocket'}`}>
+                           <span className="text-xs font-black uppercase">{skill.id.slice(0,3)}</span>
+                        </div>
+                        {selected && (
+                           <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                             <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                           </svg>
+                        )}
                       </div>
-                      {selected ? (
-                        <span className="rounded-full bg-white/20 px-2.5 py-1 text-[11px] font-bold uppercase tracking-[0.12em] text-inherit">
-                          Selected
-                        </span>
-                      ) : null}
-                    </div>
-                    <div className="mt-4 space-y-1">
-                      <h3 className="text-base font-semibold leading-6">{skill.title}</h3>
-                      <p className={selected ? 'text-sm text-white/80' : 'text-sm text-slate-500'}>
+                      <p className="font-bold text-[15px] mb-1">{skill.title}</p>
+                      <p className={`text-[11px] font-medium leading-tight ${selected ? 'text-white/80' : 'text-gray-400'}`}>
                         {skill.description}
                       </p>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-
-            <div className="mt-5 rounded-2xl bg-white p-4 shadow-[0_10px_25px_-20px_rgba(15,23,42,0.25)]">
-              <p className="text-sm font-medium text-slate-600">
-                {isStudent
-                  ? `${parseSkills(profileData.abilities_description).length} skill${parseSkills(profileData.abilities_description).length === 1 ? '' : 's'} selected`
-                  : 'Skill selection is available for student profiles only.'}
-              </p>
-              {errors.abilities_description ? (
-                <p className="mt-2 text-sm text-red-600">{errors.abilities_description}</p>
-              ) : null}
-            </div>
+                    </button>
+                  );
+                })}
+             </div>
           </section>
         </div>
 
-        {isEditing ? (
-          <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-            <button
-              type="button"
-              onClick={handleCancelEditing}
-              className="inline-flex items-center justify-center rounded-xl border border-slate-300 bg-white px-6 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
-            >
-              Back
-            </button>
-            <button
-              type="submit"
-              className="inline-flex items-center justify-center rounded-xl bg-[#564AF7] px-7 py-3 text-sm font-bold text-white shadow-[0_22px_45px_-18px_rgba(86,74,247,0.5)] transition hover:bg-[#4b40dd]"
-            >
-              Save Changes
-            </button>
+        <aside className="space-y-8">
+          {isEditing && (
+            <div className="bg-white border border-gray-100 rounded-[32px] p-6 space-y-4 shadow-xl shadow-rocket/5">
+               <h3 className="text-lg font-bold text-darkside">Ready to update?</h3>
+               <p className="text-xs text-gray-400 font-medium leading-relaxed">
+                  Carefully review all changes. Accurate profiles increase your mission acceptance rate.
+               </p>
+               <div className="space-y-2 pt-2">
+                 <button
+                   type="submit"
+                   className="w-full bg-rocket text-white font-bold py-4 rounded-2xl shadow-xl shadow-rocket/20 hover:bg-indigo-700 transition-all active:scale-95"
+                 >
+                   Save Changes
+                 </button>
+                 <button
+                   type="button"
+                   onClick={handleCancelEditing}
+                   className="w-full border-2 border-gray-100 text-gray-400 font-bold py-3 rounded-2xl hover:bg-gray-50 transition-all"
+                 >
+                   Cancel
+                 </button>
+               </div>
+            </div>
+          )}
+
+          <div className="bg-darkside text-white rounded-[32px] p-8 space-y-8 shadow-2xl relative overflow-hidden group">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-rocket/10 rounded-full blur-3xl -mr-16 -mt-16 group-hover:bg-rocket/20 transition-all duration-500"></div>
+            
+            <div className="space-y-1 relative">
+              <h3 className="text-xl font-bold tracking-tight">Trust Status</h3>
+              <p className="text-[10px] text-gray-400 font-black uppercase tracking-[0.2em]">Verified Member</p>
+            </div>
+
+            <div className="space-y-6 relative">
+              <div className="flex items-center gap-4 group/item">
+                <div className="w-12 h-12 rounded-2xl bg-white/5 flex items-center justify-center text-rocket transition-transform group-hover/item:scale-110">
+                   <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                   </svg>
+                </div>
+                <div>
+                   <p className="text-sm font-bold">Identity Confirmed</p>
+                   <p className="text-[10px] text-gray-500 font-medium">Synced with Campus</p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-4 group/item">
+                <div className="w-12 h-12 rounded-2xl bg-white/5 flex items-center justify-center text-yoda transition-transform group-hover/item:scale-110">
+                   <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-7.714 2.143L11 21l-2.286-6.857L1 12l7.714-2.143L11 3z" />
+                   </svg>
+                </div>
+                <div>
+                   <p className="text-sm font-bold">Trust Badge: 100</p>
+                   <p className="text-[10px] text-gray-500 font-medium">Premium Contributor</p>
+                </div>
+              </div>
+            </div>
           </div>
-        ) : null}
+        </aside>
       </form>
-    </section>
+    </div>
   );
 }
